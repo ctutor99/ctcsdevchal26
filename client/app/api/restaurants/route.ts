@@ -10,7 +10,7 @@ import { toRestaurant } from '@/lib/types';
 export async function GET() {
   try {
     const { rows } = await pool.query(
-      'SELECT * FROM restaurants'
+      'SELECT * FROM restaurants ORDER BY created_at DESC'
     );
     // Map every row - raw rows don't match the contract (NUMERIC comes back
     // as a string, timestamps as Date objects). See lib/types.ts.
@@ -31,6 +31,12 @@ export async function GET() {
  * `rating` happily accepts 6. Decide what valid means for each field and reject
  * bad bodies with a 400 rather than letting them reach the database.
  */
-export async function POST(_req: Request) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+export async function POST(_req: Request) { //THIS IS WHAT I ADDED
+  const body = await _req.json();
+  const { name, cuisine, address, rating } = body;
+  const result = await pool.query(
+  'INSERT INTO restaurants (name, cuisine, address, rating) VALUES ($1, $2, $3, $4) RETURNING *',
+  [name, cuisine, address, rating]
+);
+  return NextResponse.json(toRestaurant(result.rows[0]), { status: 201 });
 }
