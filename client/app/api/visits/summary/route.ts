@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { pool } from '@/db/pool';
 import { handleError } from '@/lib/errors';
 
+// Spending changes whenever a visit is added or deleted, so never cache this route.
+export const dynamic = 'force-dynamic';
+
 /** GET /api/visits/summary */
 export async function GET() {
   try {
