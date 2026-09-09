@@ -9,12 +9,12 @@
  * into that shape. You need them because `pg` does not hand back the types you
  * might expect:
  *
- *   - `NUMERIC` columns (`rating`, `amount`) arrive as **strings**
+ *   - `NUMERIC` columns (`rating`, `amountSpent`) arrive as **strings**
  *     ("4.5", not 4.5). node-postgres does this on purpose - NUMERIC has more
  *     precision than a JS number, so parsing it automatically could lose data.
  *   - `DATE` and `TIMESTAMPTZ` columns arrive as **Date objects**, which
  *     `JSON.stringify` turns into full ISO timestamps. For a calendar date like
- *     `visits.visited_at` that's wrong twice over: it invents a time, and it shifts
+ *     `visits.date` that's wrong twice over: it invents a time, and it shifts
  *     the day depending on the server's timezone.
  *
  * Returning `rows` straight from a query therefore does *not* match the
@@ -87,10 +87,10 @@ export function toRestaurant(row: Record<string, unknown>): Restaurant {
 export function toVisit(row: Record<string, unknown>): Visit {
   return {
     id: Number(row.id),
-    restaurantId: Number(row.restaurant_id),
+    restaurantId: Number(row.restaurantId),
     restaurantName: String(row.restaurant_name),
-    amount: Number(row.amount),
-    visitedAt: dateOnly(row.visited_at),
+    amount: Number(row.amountSpent),
+    visitedAt: dateOnly(row.date),
     createdAt: isoTimestamp(row.created_at),
   };
 }

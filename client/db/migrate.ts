@@ -3,8 +3,8 @@ import path from 'path';
 import { pool } from './pool';
 
 /**
- * Tiny migration runner: executes new .sql files in ./migrations in
- * alphabetical order and records which files have already run.
+ * Tiny migration runner: executes unapplied .sql files in ./migrations in
+ * alphabetical order and records them in a migration ledger.
  *
  * Run with: npm run migrate
  *
@@ -37,16 +37,6 @@ async function migrate(): Promise<void> {
     WHERE to_regclass('public.restaurants') IS NOT NULL
     ON CONFLICT DO NOTHING
   `);
-  await pool.query(`
-    INSERT INTO schema_migrations (filename)
-    SELECT '002_add_visits.sql'
-    WHERE EXISTS (
-      SELECT 1 FROM information_schema.columns
-      WHERE table_name = 'visits' AND column_name = 'restaurant_id'
-    )
-    ON CONFLICT DO NOTHING
-  `);
-
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)

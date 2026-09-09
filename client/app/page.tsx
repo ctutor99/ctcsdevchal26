@@ -18,15 +18,29 @@ export default function HomePage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/restaurants').then((response) => response.json()),
-      fetch('/api/visits').then((response) => response.json()),
-      fetch('/api/visits/summary').then((response) => response.json()),
-    ]).then(([restaurantData, visitData, summaryData]) => {
+    async function loadData() {
+      const responses = await Promise.all([
+        fetch('/api/restaurants'),
+        fetch('/api/visits'),
+        fetch('/api/visits/summary'),
+      ]);
+      const [restaurantData, visitData, summaryData] = await Promise.all(
+        responses.map((response) => response.json())
+      );
+      const failedIndex = responses.findIndex((response) => !response.ok);
+
+      if (failedIndex !== -1) {
+        const data = [restaurantData, visitData, summaryData][failedIndex];
+        setError(data.error ?? 'Could not load data');
+        return;
+      }
+
       setRestaurants(restaurantData);
       setVisits(visitData);
       setSummary(summaryData);
-    });
+    }
+
+    loadData().catch(() => setError('Could not load data'));
   }, []);
 
   async function refreshVisits() {
@@ -34,8 +48,18 @@ export default function HomePage() {
       fetch('/api/visits'),
       fetch('/api/visits/summary'),
     ]);
-    setVisits(await visitResponse.json());
-    setSummary(await summaryResponse.json());
+    const [visitData, summaryData] = await Promise.all([
+      visitResponse.json(),
+      summaryResponse.json(),
+    ]);
+
+    if (!visitResponse.ok || !summaryResponse.ok) {
+      setError(visitData.error ?? summaryData.error ?? 'Could not load visits');
+      return;
+    }
+
+    setVisits(visitData);
+    setSummary(summaryData);
   }
 
   async function addVisit(event: FormEvent<HTMLFormElement>) {

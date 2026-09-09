@@ -10,18 +10,18 @@ export async function GET(req: Request) {
     const restaurantId = new URL(req.url).searchParams.get('restaurantId');
     let query = `SELECT visits.*, restaurants.name AS restaurant_name
                  FROM visits
-                 JOIN restaurants ON restaurants.id = visits.restaurant_id`;
+                 JOIN restaurants ON restaurants.id = visits."restaurantId"`;
     const values: number[] = [];
 
     if (restaurantId !== null) {
       if (!/^[1-9]\d*$/.test(restaurantId) || !Number.isSafeInteger(Number(restaurantId))) {
         return NextResponse.json([]);
       }
-      query += ' WHERE visits.restaurant_id = $1';
+      query += ' WHERE visits."restaurantId" = $1';
       values.push(Number(restaurantId));
     }
 
-    query += ' ORDER BY visits.visited_at DESC, visits.id DESC';
+    query += ' ORDER BY visits.date DESC, visits.id DESC';
     const { rows } = await pool.query(query, values);
     return NextResponse.json(rows.map(toVisit));
   } catch (err) {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
     }
 
     const { rows } = await pool.query(
-      'INSERT INTO visits (restaurant_id, amount, visited_at) VALUES ($1, $2, $3) RETURNING *',
+      'INSERT INTO visits ("restaurantId", "amountSpent", date) VALUES ($1, $2, $3) RETURNING *',
       [restaurantId, amount, visitedAt]
     );
 

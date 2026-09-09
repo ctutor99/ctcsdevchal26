@@ -43,7 +43,7 @@ async function seed(): Promise<void> {
 
     for (const v of visits) {
       await client.query(
-        `INSERT INTO visits (restaurant_id, amount, visited_at)
+        `INSERT INTO visits ("restaurantId", "amountSpent", date)
          VALUES ($1, $2, $3)`,
         [restaurantIds[v.restaurantIndex], v.amount, v.visitedAt]
       );

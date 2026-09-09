@@ -13,6 +13,12 @@
 > What made you pick it over everything else you could have built? This is the
 > question we care most about - the _why_ matters more than the _what_.
 
+What I built: an API and matching UI for the already existing "visits" table, along with a yearly/monthly spend summary and basic "ADD" and "DELETE" buttons to the frontend. 
+
+My "why" and "why I built this instead of anything else", comes down to the act that I actually  wanted to finish a basic working version of the app first, instead of adding new features that aren't in the app description. The very first line of the writeup says that this this program should be "A fullstack app for tracking restaurants, visits, and how much Brennen spends eating". The frontend that remained after building A1-A3 did not do that in the slightest. But, the thing is, we have already implemented 80 percent of the "tracking visits" and "How much Brennen spends eating" parts. We just need it to build the API and UI inorder to access it. 
+
+
+
 ## 2. What did you decide, and what did you rule out?
 
 > Route shapes, data model, where the logic lives, what you deliberately didn't
@@ -50,6 +56,8 @@
 > Any migrations you added (`002_*.sql`, ...), new tables or columns, and
 > anything a reviewer needs to run beyond `./setup.sh`. Write "none" if there
 > were none.
+
+None. Part B uses the existing `visits` table from `001_create_tables.sql`.
 
 ## How I verified this
 
