@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/db/pool';
-import { handleError } from '@/lib/errors';
+import { ConflictError, handleError, NotFoundError } from '@/lib/errors';
 import { toRestaurant } from '@/lib/types';
+import { parseRestaurantId, validateRestaurantInput } from '@/lib/validation';
 
 type Params = { params: { id: string } };
 
@@ -11,13 +12,14 @@ type Params = { params: { id: string } };
  */
 export async function GET(_req: Request, { params }: Params) {
   try {
+    const id = parseRestaurantId(params.id);
     const { rows } = await pool.query(
       'SELECT * FROM restaurants WHERE id = $1',
-      [params.id]
+      [id]
     );
 
     if (rows.length === 0) {
-      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+      throw new NotFoundError('Restaurant not found');
     }
 
     return NextResponse.json(toRestaurant(rows[0]));
@@ -30,21 +32,41 @@ export async function GET(_req: Request, { params }: Params) {
  * PUT /api/restaurants/:id
  * Update an existing restaurant.
  *
- * TODO (A2): implement. Update the row matching :id and return the updated
- * record (or 404 if it doesn't exist). Validate the body the same way POST does.
+ * Validates the request body and updates the row matching :id.
  */
 export async function PUT(req: Request, { params }: Params) {
   try {
-    const body = await req.json();
-    const { name, cuisine, address, rating } = body;
+    const id = parseRestaurantId(params.id);
+    const { name, cuisine, address, rating } = validateRestaurantInput(await req.json());
+    const existing = await pool.query(
+      'SELECT id FROM restaurants WHERE id = $1',
+      [id]
+    );
+
+    if (existing.rows.length === 0) {
+      throw new NotFoundError('Restaurant not found');
+    }
+
+    const duplicate = await pool.query(
+      `SELECT id FROM restaurants
+       WHERE LOWER(name) = LOWER($1)
+         AND LOWER(COALESCE(address, '')) = LOWER(COALESCE($2, ''))
+         AND id <> $3
+       LIMIT 1`,
+      [name, address, id]
+    );
+
+    if (duplicate.rows.length > 0) {
+      throw new ConflictError('A restaurant with this name and address already exists');
+    }
 
     const { rows } = await pool.query(
       'UPDATE restaurants SET name = $2, cuisine = $3, address = $4, rating = $5 WHERE id = $1 RETURNING *',
-      [params.id, name, cuisine, address, rating]
+      [id, name, cuisine, address, rating]
     );
 
     if (rows.length === 0) {
-      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+      throw new NotFoundError('Restaurant not found');
     }
 
     return NextResponse.json(toRestaurant(rows[0]));
@@ -66,13 +88,14 @@ export async function PUT(req: Request, { params }: Params) {
  */
 export async function DELETE(_req: Request, { params }: Params) {
   try {
+    const id = parseRestaurantId(params.id);
     const result = await pool.query(
       'DELETE FROM restaurants WHERE id = $1',
-      [params.id]
+      [id]
     );
 
     if (result.rowCount === 0) {
-      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+      throw new NotFoundError('Restaurant not found');
     }
 
     return new NextResponse(null, { status: 204 });

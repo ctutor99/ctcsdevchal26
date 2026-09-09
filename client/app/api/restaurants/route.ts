@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { pool } from '@/db/pool';
-import { handleError } from '@/lib/errors';
+import { ConflictError, handleError } from '@/lib/errors';
 import { toRestaurant } from '@/lib/types';
+import { validateRestaurantInput } from '@/lib/validation';
 
 /**
  * GET /api/restaurants
@@ -24,19 +25,30 @@ export async function GET() {
  * POST /api/restaurants
  * Create a new restaurant.
  *
- * TODO (A2): implement. Read the restaurant fields from the request body,
- * insert a row, and return the created restaurant with a 201 status.
- *
- * TODO (A3): validate before you insert. Nothing validates anything today, so
- * `rating` happily accepts 6. Decide what valid means for each field and reject
- * bad bodies with a 400 rather than letting them reach the database.
+ * Validates the request body, inserts a row, and returns the created restaurant.
  */
-export async function POST(_req: Request) { //THIS IS WHAT I ADDED
-  const body = await _req.json();
-  const { name, cuisine, address, rating } = body;
-  const result = await pool.query(
-  'INSERT INTO restaurants (name, cuisine, address, rating) VALUES ($1, $2, $3, $4) RETURNING *',
-  [name, cuisine, address, rating]
-);
-  return NextResponse.json(toRestaurant(result.rows[0]), { status: 201 });
+export async function POST(req: Request) {
+  try {
+    const { name, cuisine, address, rating } = validateRestaurantInput(await req.json());
+    const duplicate = await pool.query(
+      `SELECT id FROM restaurants
+       WHERE LOWER(name) = LOWER($1)
+         AND LOWER(COALESCE(address, '')) = LOWER(COALESCE($2, ''))
+       LIMIT 1`,
+      [name, address]
+    );
+
+    if (duplicate.rows.length > 0) {
+      throw new ConflictError('A restaurant with this name and address already exists');
+    }
+
+    const result = await pool.query(
+      'INSERT INTO restaurants (name, cuisine, address, rating) VALUES ($1, $2, $3, $4) RETURNING *',
+      [name, cuisine, address, rating]
+    );
+
+    return NextResponse.json(toRestaurant(result.rows[0]), { status: 201 });
+  } catch (err) {
+    return handleError(err);
+  }
 }
