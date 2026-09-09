@@ -33,8 +33,24 @@ export async function GET(_req: Request, { params }: Params) {
  * TODO (A2): implement. Update the row matching :id and return the updated
  * record (or 404 if it doesn't exist). Validate the body the same way POST does.
  */
-export async function PUT(_req: Request, _ctx: Params) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+export async function PUT(req: Request, { params }: Params) {
+  try {
+    const body = await req.json();
+    const { name, cuisine, address, rating } = body;
+
+    const { rows } = await pool.query(
+      'UPDATE restaurants SET name = $2, cuisine = $3, address = $4, rating = $5 WHERE id = $1 RETURNING *',
+      [params.id, name, cuisine, address, rating]
+    );
+
+    if (rows.length === 0) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
+    return NextResponse.json(toRestaurant(rows[0]));
+  } catch (err) {
+    return handleError(err);
+  }
 }
 
 /**
@@ -48,6 +64,19 @@ export async function PUT(_req: Request, _ctx: Params) {
  * restaurant's visits. Go read it. If you disagree with it, say so in your
  * write-up.
  */
-export async function DELETE(_req: Request, _ctx: Params) {
-  return NextResponse.json({ error: 'Not implemented' }, { status: 501 });
+export async function DELETE(_req: Request, { params }: Params) {
+  try {
+    const result = await pool.query(
+      'DELETE FROM restaurants WHERE id = $1',
+      [params.id]
+    );
+
+    if (result.rowCount === 0) {
+      return NextResponse.json({ error: 'Restaurant not found' }, { status: 404 });
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (err) {
+    return handleError(err);
+  }
 }
