@@ -13,9 +13,13 @@
 > What made you pick it over everything else you could have built? This is the
 > question we care most about - the _why_ matters more than the _what_.
 
-What I built: an API and matching UI for the already existing "visits" table, along with a monthly/yearly spend summary and basic "ADD" and "DELETE" buttons to the frontend. 
+Imagine opening a version of Instagram whose description says: "talk to your friends! Share your story!", and there is no way to direct message anyone. Like, thats a critical feature thats missing! thats definitely the next thing someone should add! 
 
-My "why" and "why I built this instead of anything else" comes down to the fact that I actually wanted to finish a basic working version of the app first, instead of adding new features that aren't in the app description. The very first line of the writeup says that this program should be "A fullstack app for tracking restaurants, visits, and how much Brennen spends eating". The frontend that remained after building A1-A3 did not do that in the slightest. But, the thing is, we have already implemented 80 percent of the "tracking visits" and "How much Brennen spends eating" parts. We just need it to build the API and UI inorder to access it. 
+My "why" and "why I built this instead of anything else" comes down to the fact that I actually wanted to finish a basic working version of the app first, instead of adding new features that aren't in the app description. The very first line of the writeup says that this program should be "A fullstack app for tracking restaurants, visits, and how much Brennen spends eating". But, the frontend that remained after building A1-A3 did not do that in the slightest. 
+
+What I built: an API and matching UI for the "visits" table, along with a monthly/yearly spend summary and basic "ADD" and "DELETE" buttons to the frontend. 
+
+Additionally, the repo provided already implemented 80 percent of the "tracking visits" and "How much Brennen spends eating" parts through its own SQL table. My part B just had me using it in  building an API and UI so its viewable in the app. I added some additional basic features/quality of life upgrades, like a basic spending summary calculated by the month/year, and basic frontend add and delete buttons so we don't have to use the terminal to add or delete anything. 
 
 
 
@@ -48,9 +52,11 @@ The problem with my code is, while I built the visits feature into the existing 
 | Method and path           | What it does                 | Success              | Errors                |
 | --------------------------| ---------------------------- | ---------------------| ----------------------|
 | `GET /api/visits`.        |Lists visits.                 | `200` + visit array  | `500` if server error |
-| `POST /api/visits`        |Creates a visit.              | `201` + created visit| `400` on invalid input, 404 on restaraunt not found |
+| `POST /api/visits`        |Creates a visit.              | `201` + created visit| `400` on invalid input 404 on restaraunt not found |
 | `DELETE /api/visits/:id`  | deletes a visit              | `204` with no body   | `404` visit not found |
 | `GET /api/visits/summary` | Current month + year spending| `200` + summary      | `500` on server error.|
+
+
 
 
 **`POST /api/visits`**
@@ -74,6 +80,7 @@ The problem with my code is, while I built the visits feature into the existing 
   }
 
   **`GET /api/visits`**
+
   ```json
   [
     {
@@ -103,7 +110,11 @@ The problem with my code is, while I built the visits feature into the existing 
 > anything a reviewer needs to run beyond `./setup.sh`. Write "none" if there
 > were none.
 
+
+
 None!
+
+
 
 ## How I verified this
 
@@ -130,10 +141,38 @@ curl -i -X POST http://localhost:3000/api/restaurants \
 **Part B** - the equivalent cases for what you built:
 
 ```bash
+curl -i http://localhost:3000/api/visits # 200 + visit array
+curl -i http://localhost:3000/api/visits/summary # 200 + spending summary
+curl -i -X DELETE http://localhost:3000/api/visits/99999 # 404 if visit does not exist
+curl -i -X DELETE http://localhost:3000/api/visits/4 # 204; replace 4 with the ID returned by the successful POST
+
+curl -i -X POST http://localhost:3000/api/visits \
+  -H 'Content-Type: application/json' \
+  -d '{"restaurantId":1,"amount":12.34,"visitedAt":"2026-09-09"}' # 201 + created visit
+
+curl -i -X POST http://localhost:3000/api/visits \
+  -H 'Content-Type: application/json' \
+  -d '{"restaurantId":1,"amount":0,"visitedAt":"2026-09-09"}' # 400 because amount is invalid
+
+  curl -i -X POST http://localhost:3000/api/visits \
+    -H 'Content-Type: application/json' \
+    -d '{"restaurantId":99999,"amount":12.34,"visitedAt":"2026-09-09"}' # 404 because restaurant does not exist
+
+  
 
 ```
 
 ## Known issues / what I'd do next
+
+KNOWN ISSUES: 
+Frontend things: theres no button to delete existing restaraunts, only visits. 
+
+Part A + Part B integration: Like I said before, Creating a new restaurant and its visit is not atomic. If the restaurant request succeeds but the visit request fails, the restaurant remains saved. I also did not add automated tests or disable the form while a request ispending, so repeated clicks could create duplicate entries.
+
+What I'd do next
+
+1. Solve the issues obviously
+2. Add more features! A way to edit past entries, filters, tests, images of food! 
 
 
 
