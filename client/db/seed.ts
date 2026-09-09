@@ -17,9 +17,9 @@ const restaurants = [
 ];
 
 const visits = [
-  { restaurantIndex: 0, date: '2026-01-12', amountSpent: 42.5, notes: 'Burger night with the crew.' },
-  { restaurantIndex: 1, date: '2026-02-03', amountSpent: 88.0, notes: 'Omakase. Worth every penny.' },
-  { restaurantIndex: 3, date: '2026-03-21', amountSpent: 31.75, notes: 'Tacos to go.' },
+  { restaurantIndex: 0, visitedAt: '2026-01-12', amount: 42.5 },
+  { restaurantIndex: 1, visitedAt: '2026-02-03', amount: 88.0 },
+  { restaurantIndex: 3, visitedAt: '2026-03-21', amount: 31.75 },
 ];
 
 async function seed(): Promise<void> {
@@ -43,9 +43,9 @@ async function seed(): Promise<void> {
 
     for (const v of visits) {
       await client.query(
-        `INSERT INTO visits ("restaurantId", date, "amountSpent", notes)
-         VALUES ($1, $2, $3, $4)`,
-        [restaurantIds[v.restaurantIndex], v.date, v.amountSpent, v.notes]
+        `INSERT INTO visits (restaurant_id, amount, visited_at)
+         VALUES ($1, $2, $3)`,
+        [restaurantIds[v.restaurantIndex], v.amount, v.visitedAt]
       );
     }
 

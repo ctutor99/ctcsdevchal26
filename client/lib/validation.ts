@@ -7,6 +7,12 @@ export interface RestaurantInput {
   rating: number | null;
 }
 
+export interface VisitInput {
+  restaurantId: number;
+  amount: number;
+  visitedAt: string;
+}
+
 const restaurantFields = new Set(['name', 'cuisine', 'address', 'rating']);
 
 function optionalText(
@@ -77,6 +83,59 @@ export function parseRestaurantId(value: string): number {
   const id = Number(value);
   if (!Number.isSafeInteger(id)) {
     throw new NotFoundError('Restaurant not found');
+  }
+
+  return id;
+}
+
+export function validateVisitInput(value: unknown): VisitInput {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    throw new ValidationError('Request body must be a JSON object');
+  }
+
+  const body = value as Record<string, unknown>;
+
+  if (
+    typeof body.restaurantId !== 'number' ||
+    !Number.isSafeInteger(body.restaurantId) ||
+    body.restaurantId <= 0
+  ) {
+    throw new ValidationError('restaurantId must be a positive integer');
+  }
+
+  if (
+    typeof body.amount !== 'number' ||
+    !Number.isFinite(body.amount) ||
+    body.amount <= 0 ||
+    body.amount > 99999999.99
+  ) {
+    throw new ValidationError('amount must be a number greater than 0 and no more than 99999999.99');
+  }
+
+  if (typeof body.visitedAt !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(body.visitedAt)) {
+    throw new ValidationError('visitedAt must be a valid date in YYYY-MM-DD format');
+  }
+
+  const date = new Date(`${body.visitedAt}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== body.visitedAt) {
+    throw new ValidationError('visitedAt must be a valid date in YYYY-MM-DD format');
+  }
+
+  return {
+    restaurantId: body.restaurantId,
+    amount: body.amount,
+    visitedAt: body.visitedAt,
+  };
+}
+
+export function parseVisitId(value: string): number {
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new NotFoundError('Visit not found');
+  }
+
+  const id = Number(value);
+  if (!Number.isSafeInteger(id)) {
+    throw new NotFoundError('Visit not found');
   }
 
   return id;
