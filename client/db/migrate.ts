@@ -3,8 +3,8 @@ import path from 'path';
 import { pool } from './pool';
 
 /**
- * Tiny migration runner: executes unapplied .sql files in ./migrations in
- * alphabetical order and records them in a migration ledger.
+ * Tiny migration runner: executes every .sql file in ./migrations in
+ * alphabetical order. The migrations use `IF NOT EXISTS`, so re-running is safe.
  *
  * Run with: npm run migrate
  *
@@ -22,21 +22,6 @@ import { pool } from './pool';
  * (node-pg-migrate, Knex, Drizzle, ...) is fair game.
  */
 async function migrate(): Promise<void> {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      filename TEXT PRIMARY KEY,
-      applied_at TIMESTAMPTZ NOT NULL DEFAULT now()
-    )
-  `);
-
-  // Older copies of the project had no migration ledger. Detect their current
-  // schema once so adding the ledger does not rerun migrations already applied.
-  await pool.query(`
-    INSERT INTO schema_migrations (filename)
-    SELECT '001_create_tables.sql'
-    WHERE to_regclass('public.restaurants') IS NOT NULL
-    ON CONFLICT DO NOTHING
-  `);
   const migrationsDir = path.join(__dirname, 'migrations');
   const files = fs
     .readdirSync(migrationsDir)
@@ -48,28 +33,13 @@ async function migrate(): Promise<void> {
     return;
   }
 
-  let appliedCount = 0;
   for (const file of files) {
-    const applied = await pool.query(
-      'SELECT 1 FROM schema_migrations WHERE filename = $1',
-      [file]
-    );
-    if (applied.rows.length > 0) {
-      console.log(`Skipping migration: ${file}`);
-      continue;
-    }
-
     const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf8');
     console.log(`Running migration: ${file}`);
     await pool.query(sql);
-    await pool.query(
-      'INSERT INTO schema_migrations (filename) VALUES ($1)',
-      [file]
-    );
-    appliedCount++;
   }
 
-  console.log(`Applied ${appliedCount} new migration(s).`);
+  console.log(`Applied ${files.length} migration(s).`);
 }
 
 migrate()

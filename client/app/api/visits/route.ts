@@ -5,24 +5,14 @@ import { toVisit } from '@/lib/types';
 import { validateVisitInput } from '@/lib/validation';
 
 /** GET /api/visits */
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const restaurantId = new URL(req.url).searchParams.get('restaurantId');
-    let query = `SELECT visits.*, restaurants.name AS restaurant_name
-                 FROM visits
-                 JOIN restaurants ON restaurants.id = visits."restaurantId"`;
-    const values: number[] = [];
-
-    if (restaurantId !== null) {
-      if (!/^[1-9]\d*$/.test(restaurantId) || !Number.isSafeInteger(Number(restaurantId))) {
-        return NextResponse.json([]);
-      }
-      query += ' WHERE visits."restaurantId" = $1';
-      values.push(Number(restaurantId));
-    }
-
-    query += ' ORDER BY visits.date DESC, visits.id DESC';
-    const { rows } = await pool.query(query, values);
+    const { rows } = await pool.query(
+      `SELECT visits.*, restaurants.name AS restaurant_name
+       FROM visits
+       JOIN restaurants ON restaurants.id = visits."restaurantId"
+       ORDER BY visits.date DESC, visits.id DESC`
+    );
     return NextResponse.json(rows.map(toVisit));
   } catch (err) {
     return handleError(err);
